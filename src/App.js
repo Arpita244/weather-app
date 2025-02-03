@@ -21,22 +21,15 @@ const WeatherApp = () => {
   const [weather, setWeather] = useState(null);
   const [error, setError] = useState('');
 
-  // Fetch weather data
+  // Function to fetch weather data
   const fetchWeather = async (loc) => {
     setError('');
     const data = await fetchWeatherData(loc);
-    console.log("Fetched Weather Data:", data); // Debugging: Check API response
+    console.log("Fetched Weather Data:", data);
 
     if (data) {
       setWeather(data);
-
-      // Fetch place name after fetching weather
-      if (data.resolvedAddress) {
-        setPlaceName(data.resolvedAddress); // Set place name from API
-        setLocation(data.resolvedAddress);   // Show in input field
-      } else {
-        setPlaceName('Location Not Found'); // Fallback if API doesn't return it
-      }
+      setPlaceName(data.resolvedAddress || loc); // Update place name after fetching weather
     } else {
       setError('Unable to fetch weather data. Please try again.');
     }
@@ -63,13 +56,13 @@ const WeatherApp = () => {
             async (position) => {
               const { latitude, longitude } = position.coords;
               const userLocation = `${latitude},${longitude}`;
-              
+
               // Get city name from reverse geocoding
               const cityName = await getCityName(latitude, longitude);
-              setLocation(cityName || userLocation);
-              setPlaceName(cityName || 'Unknown Location');
+              setLocation(cityName || userLocation); // Update location to city name or coordinates
+              setPlaceName(cityName || 'Unknown Location'); // Update place name
 
-              await fetchWeather(userLocation);
+              await fetchWeather(userLocation); // Fetch weather data based on location
             },
             (error) => {
               setError('Location access denied. Please enter a location manually.');
@@ -84,7 +77,7 @@ const WeatherApp = () => {
     }
   }, []);
 
-  // Handle search input
+  // Handle search input manually
   const handleSearch = async () => {
     if (!location) {
       setError('Please enter a location.');
@@ -131,8 +124,10 @@ const WeatherApp = () => {
       {/* Display Location Name */}
       {placeName && <h2 className="location-name">📍 {placeName}</h2>}
 
+      {/* Display Error */}
       {error && <p className="error-message">{error}</p>}
 
+      {/* Display Weather Data */}
       {weather && (
         <>
           <div className="weather-container">
