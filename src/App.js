@@ -20,7 +20,18 @@ const WeatherApp = () => {
   const [weather, setWeather] = useState(null);
   const [error, setError] = useState('');
 
-  // Automatically detect location
+  // Fetch weather data
+  const fetchWeather = async (loc) => {
+    setError('');
+    const data = await fetchWeatherData(loc);
+    if (data) {
+      setWeather(data);
+    } else {
+      setError('Unable to fetch weather data. Please try again.');
+    }
+  };
+
+  // Automatically detect location on first load
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -28,12 +39,7 @@ const WeatherApp = () => {
           const { latitude, longitude } = position.coords;
           const userLocation = `${latitude},${longitude}`;
           setLocation(userLocation);
-          const data = await fetchWeatherData(userLocation);
-          if (data) {
-            setWeather(data);
-          } else {
-            setError('Unable to fetch weather data. Please try again.');
-          }
+          await fetchWeather(userLocation);
         },
         (error) => {
           setError('Location access denied. Please enter a location manually.');
@@ -44,18 +50,24 @@ const WeatherApp = () => {
     }
   }, []);
 
-  // Function to generate chart data
+  // Handle search input
+  const handleSearch = async () => {
+    if (!location) {
+      setError('Please enter a location.');
+      return;
+    }
+    await fetchWeather(location);
+  };
+
+  // Generate data for temperature chart
   const generateChartData = () => {
     if (!weather || !weather.days) return null;
-    const labels = weather.days.map((day) => day.datetime); // Dates for the next 7 days
-    const temperatures = weather.days.map((day) => day.temp); // Temperatures for the next 7 days
-
     return {
-      labels,
+      labels: weather.days.map((day) => day.datetime),
       datasets: [
         {
           label: 'Daily Temperature (°C)',
-          data: temperatures,
+          data: weather.days.map((day) => day.temp),
           borderColor: '#007bff',
           backgroundColor: 'rgba(0, 123, 255, 0.2)',
           fill: true,
@@ -67,7 +79,23 @@ const WeatherApp = () => {
   return (
     <div className="app-container">
       <h1 className="app-title">Weather App</h1>
+      
+      {/* Search Bar */}
+      <div className="search-container">
+        <input
+          type="text"
+          placeholder="Enter location"
+          className="search-input"
+          value={location}
+          onChange={(e) => setLocation(e.target.value)}
+        />
+        <button onClick={handleSearch} className="search-button">
+          Search
+        </button>
+      </div>
+
       {error && <p className="error-message">{error}</p>}
+
       {weather && (
         <>
           <div className="weather-container">
