@@ -65,14 +65,23 @@ const WeatherApp = () => {
   // Reverse Geocoding Function (Using OpenStreetMap's Nominatim API)
   const getCityName = async (lat, lon) => {
     try {
-      const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
+      const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&addressdetails=1`);
       const data = await response.json();
-      return data.address.city || data.address.town || data.address.village || "Unknown Location";
+  
+      // Check if the 'address' property exists and if so, extract the city, town, or village
+      if (data.address) {
+        return (
+          data.address.city 
+        );
+      } else {
+        return "Unknown Location";
+      }
     } catch (error) {
       console.error("Error fetching city name:", error);
-      return null;
+      return "Error fetching location";
     }
   };
+  
 
   // Generate temperature chart data
   const generateChartData = () => {
