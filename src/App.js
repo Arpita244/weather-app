@@ -25,12 +25,32 @@ const WeatherApp = () => {
   const fetchWeather = async (loc) => {
     setError('');
     const data = await fetchWeatherData(loc);
+    console.log("Fetched Weather Data:", data); // Debugging: Check API response
+
     if (data) {
       setWeather(data);
-      setPlaceName(data.resolvedAddress); // Update search bar with location name
-      setLocation(data.resolvedAddress); // Set detected place name in input field
+
+      // Fetch place name after fetching weather
+      if (data.resolvedAddress) {
+        setPlaceName(data.resolvedAddress); // Set place name from API
+        setLocation(data.resolvedAddress);   // Show in input field
+      } else {
+        setPlaceName('Location Not Found'); // Fallback if API doesn't return it
+      }
     } else {
       setError('Unable to fetch weather data. Please try again.');
+    }
+  };
+
+  // Reverse Geocoding Function (Using OpenStreetMap's Nominatim API)
+  const getCityName = async (lat, lon) => {
+    try {
+      const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
+      const data = await response.json();
+      return data.address.city || data.address.town || data.address.village || "Unknown Location";
+    } catch (error) {
+      console.error("Error fetching city name:", error);
+      return null;
     }
   };
 
@@ -43,6 +63,12 @@ const WeatherApp = () => {
             async (position) => {
               const { latitude, longitude } = position.coords;
               const userLocation = `${latitude},${longitude}`;
+              
+              // Get city name from reverse geocoding
+              const cityName = await getCityName(latitude, longitude);
+              setLocation(cityName || userLocation);
+              setPlaceName(cityName || 'Unknown Location');
+
               await fetchWeather(userLocation);
             },
             (error) => {
@@ -54,6 +80,12 @@ const WeatherApp = () => {
             async (position) => {
               const { latitude, longitude } = position.coords;
               const userLocation = `${latitude},${longitude}`;
+              
+              // Get city name from reverse geocoding
+              const cityName = await getCityName(latitude, longitude);
+              setLocation(cityName || userLocation);
+              setPlaceName(cityName || 'Unknown Location');
+
               await fetchWeather(userLocation);
             },
             (error) => {
@@ -112,6 +144,9 @@ const WeatherApp = () => {
           Search
         </button>
       </div>
+
+      {/* Display Location Name */}
+      {placeName && <h2 className="location-name">📍 {placeName}</h2>}
 
       {error && <p className="error-message">{error}</p>}
 
