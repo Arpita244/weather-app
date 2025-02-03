@@ -58,24 +58,7 @@ const WeatherApp = () => {
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.permissions.query({ name: 'geolocation' }).then((permission) => {
-        if (permission.state === 'granted') {
-          navigator.geolocation.getCurrentPosition(
-            async (position) => {
-              const { latitude, longitude } = position.coords;
-              const userLocation = `${latitude},${longitude}`;
-              
-              // Get city name from reverse geocoding
-              const cityName = await getCityName(latitude, longitude);
-              setLocation(cityName || userLocation);
-              setPlaceName(cityName || 'Unknown Location');
-
-              await fetchWeather(userLocation);
-            },
-            (error) => {
-              setError('Location access denied. Please enter a location manually.');
-            }
-          );
-        } else if (permission.state === 'prompt') {
+        if (permission.state === 'granted' || permission.state === 'prompt') {
           navigator.geolocation.getCurrentPosition(
             async (position) => {
               const { latitude, longitude } = position.coords;
