@@ -34,7 +34,7 @@ const WeatherApp = () => {
           // Use reverse geocoding to get city name
           const cityName = await getCityName(lat, lon);
           setLocation(cityName || coords);
-          setPlaceName(cityName || "Unknown Location");
+          setPlaceName(cityName);
 
           fetchWeather(coords);
         },
@@ -71,11 +71,12 @@ const WeatherApp = () => {
       // Check if the 'address' property exists and if so, extract the city, town, or village
       if (data.address) {
         return (
-          data.address.city 
+          data.address.city ||
+          data.address.town ||
+          data.address.village ||
+          data.address.state
         );
-      } else {
-        return "Unknown Location";
-      }
+      } 
     } catch (error) {
       console.error("Error fetching city name:", error);
       return "Error fetching location";
