@@ -17,6 +17,7 @@ ChartJS.register(LineElement, CategoryScale, LinearScale, PointElement, Tooltip,
 
 const WeatherApp = () => {
   const [location, setLocation] = useState('');
+  const [placeName, setPlaceName] = useState('');
   const [weather, setWeather] = useState(null);
   const [error, setError] = useState('');
 
@@ -26,25 +27,43 @@ const WeatherApp = () => {
     const data = await fetchWeatherData(loc);
     if (data) {
       setWeather(data);
+      setPlaceName(data.resolvedAddress); // Update search bar with location name
+      setLocation(data.resolvedAddress); // Set detected place name in input field
     } else {
       setError('Unable to fetch weather data. Please try again.');
     }
   };
 
-  // Automatically detect location on first load
+  // Ask for location permission and fetch weather
   useEffect(() => {
     if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          const { latitude, longitude } = position.coords;
-          const userLocation = `${latitude},${longitude}`;
-          setLocation(userLocation);
-          await fetchWeather(userLocation);
-        },
-        (error) => {
+      navigator.permissions.query({ name: 'geolocation' }).then((permission) => {
+        if (permission.state === 'granted') {
+          navigator.geolocation.getCurrentPosition(
+            async (position) => {
+              const { latitude, longitude } = position.coords;
+              const userLocation = `${latitude},${longitude}`;
+              await fetchWeather(userLocation);
+            },
+            (error) => {
+              setError('Location access denied. Please enter a location manually.');
+            }
+          );
+        } else if (permission.state === 'prompt') {
+          navigator.geolocation.getCurrentPosition(
+            async (position) => {
+              const { latitude, longitude } = position.coords;
+              const userLocation = `${latitude},${longitude}`;
+              await fetchWeather(userLocation);
+            },
+            (error) => {
+              setError('Location access denied. Please enter a location manually.');
+            }
+          );
+        } else {
           setError('Location access denied. Please enter a location manually.');
         }
-      );
+      });
     } else {
       setError('Geolocation is not supported by this browser.');
     }
@@ -59,7 +78,7 @@ const WeatherApp = () => {
     await fetchWeather(location);
   };
 
-  // Generate data for temperature chart
+  // Generate temperature chart data
   const generateChartData = () => {
     if (!weather || !weather.days) return null;
     return {
@@ -79,7 +98,7 @@ const WeatherApp = () => {
   return (
     <div className="app-container">
       <h1 className="app-title">Weather App</h1>
-      
+
       {/* Search Bar */}
       <div className="search-container">
         <input
@@ -99,7 +118,7 @@ const WeatherApp = () => {
       {weather && (
         <>
           <div className="weather-container">
-            <h2 className="location-name">{weather.resolvedAddress}</h2>
+            <h2 className="location-name">{placeName}</h2> {/* Show detected place name */}
             <p className="weather-detail">Temperature: {weather.currentConditions.temp}°C</p>
             <p className="weather-detail">Condition: {weather.currentConditions.conditions}</p>
           </div>
