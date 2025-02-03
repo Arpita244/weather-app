@@ -15,11 +15,38 @@ import {
 // Register Chart.js components
 ChartJS.register(LineElement, CategoryScale, LinearScale, PointElement, Tooltip, Legend);
 
+
 const WeatherApp = () => {
   const [location, setLocation] = useState('');
-  const [placeName, setPlaceName] = useState('');
   const [weather, setWeather] = useState(null);
   const [error, setError] = useState('');
+  const [placeName, setPlaceName] = useState('');
+
+  // Function to fetch user's location
+  useEffect(() => {
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const lat = position.coords.latitude;
+          const lon = position.coords.longitude;
+          const coords = `${lat},${lon}`;
+
+          // Use reverse geocoding to get city name
+          const cityName = await getCityName(lat, lon);
+          setLocation(cityName || coords);
+          setPlaceName(cityName || "Unknown Location");
+
+          fetchWeather(coords);
+        },
+        (error) => {
+          console.error("Error getting location:", error);
+          setError("Location access denied. Please enter a location manually.");
+        }
+      );
+    } else {
+      setError("Geolocation is not supported by your browser.");
+    }
+  }, []);
 
   // Function to fetch weather data
   const fetchWeather = async (loc) => {
@@ -29,7 +56,7 @@ const WeatherApp = () => {
 
     if (data) {
       setWeather(data);
-      setPlaceName(data.resolvedAddress || loc); // Update place name after fetching weather
+      setPlaceName(data.resolvedAddress || loc);
     } else {
       setError('Unable to fetch weather data. Please try again.');
     }
@@ -45,45 +72,6 @@ const WeatherApp = () => {
       console.error("Error fetching city name:", error);
       return null;
     }
-  };
-
-  // Ask for location permission and fetch weather
-  useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.permissions.query({ name: 'geolocation' }).then((permission) => {
-        if (permission.state === 'granted' || permission.state === 'prompt') {
-          navigator.geolocation.getCurrentPosition(
-            async (position) => {
-              const { latitude, longitude } = position.coords;
-              const userLocation = `${latitude},${longitude}`;
-
-              // Get city name from reverse geocoding
-              const cityName = await getCityName(latitude, longitude);
-              setLocation(cityName || userLocation); // Update location to city name or coordinates
-              setPlaceName(cityName || 'Unknown Location'); // Update place name
-
-              await fetchWeather(userLocation); // Fetch weather data based on location
-            },
-            (error) => {
-              setError('Location access denied. Please enter a location manually.');
-            }
-          );
-        } else {
-          setError('Location access denied. Please enter a location manually.');
-        }
-      });
-    } else {
-      setError('Geolocation is not supported by this browser.');
-    }
-  }, []);
-
-  // Handle search input manually
-  const handleSearch = async () => {
-    if (!location) {
-      setError('Please enter a location.');
-      return;
-    }
-    await fetchWeather(location);
   };
 
   // Generate temperature chart data
@@ -106,7 +94,7 @@ const WeatherApp = () => {
   return (
     <div className="app-container">
       <h1 className="app-title">Weather App</h1>
-
+      
       {/* Search Bar */}
       <div className="search-container">
         <input
@@ -116,7 +104,7 @@ const WeatherApp = () => {
           value={location}
           onChange={(e) => setLocation(e.target.value)}
         />
-        <button onClick={handleSearch} className="search-button">
+        <button onClick={() => fetchWeather(location)} className="search-button">
           Search
         </button>
       </div>
